@@ -2,10 +2,6 @@ from openai import OpenAI
 
 client = OpenAI()
 
-# chave_api = "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"
-
-# client.api_key = chave_api
-
 class ChatBot():
     def __init__(self):
         self.client = client
