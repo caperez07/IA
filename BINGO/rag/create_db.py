@@ -1,89 +1,101 @@
-from langchain_community.document_loaders import DirectoryLoader
-# from langchain.text_splitter import RecursiveCharacterTextSplitter
-# from langchain.schema import Document
-# from langchain_openai import OpenAIEmbeddings
-# from langchain_community.vectorstores import Chroma
-# import openai 
-# from dotenv import load_dotenv
-# import os
-# import shutil
+import argparse
+import os
+import shutil
+from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.schema.document import Document
+from embedding_function import get_embedding_function
+from langchain_chroma import Chroma
 
-# import nltk
-# # nltk.download('punkt')
-# nltk.data.path.append('/path/to/nltk_data')
+DATA_PATH = 'data'
+CHROMA_PATH = 'chroma'
 
-# DATA_PATH = "data"
-# CHROMA_PATH = "chroma"
+def main():
+    # checa se o db precisa ser limpo
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="Reset the database.")
+    args = parser.parse_args()
+    if args.reset:
+        print("Clearing the database")
+        clear_database()
 
-# def main():
-#     generate_data_store()
+    # cria ou atualiza os documentos
+    documents = load_documents()
+    chunks = split_documents(documents)
+    add_to_chroma(chunks)
 
-# def generate_data_store():
-#     documents = load_documents()
-#     chunks = split_text(documents)
-#     save_to_chroma(chunks)
+def load_documents():
+    document_loader = PyPDFDirectoryLoader(DATA_PATH) # langchain documentation para diferentes tipos de arquivos
+    return document_loader.load()
 
-# # carregando a 'base de dados'
-# def load_documents():
-#     loader = DirectoryLoader(DATA_PATH, glob="*.md")
-#     documents = loader.load()
-#     return documents
+def split_documents(documents):
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=800,
+        chunk_overlap=80,
+        length_function=len,
+        is_separator_regex=False,
+    )
+    return text_splitter.split_documents(documents)
 
-# # separa em chunks cada documento pra n ficar muito grande
-# def split_text(documents: list[Document]):
-#     text_splitter = RecursiveCharacterTextSplitter(
-#         chunk_size=1000,
-#         chunk_overlap=500,
-#         length_function=len,
-#         add_start_index=True,
-#     )
-#     chunks = text_splitter.split_documents(documents)
-#     print(f"Split {len(documents)} documents into {len(chunks)} chunks")
+def add_to_chroma(chunks: list[Document]):
+    # carregando db
+    db = Chroma(
+        persist_directory=CHROMA_PATH, embedding_function=get_embedding_function()
+    )
 
-#     document = chunks[0] # aleatorio, so para saber como fica
-#     print(document.page_content)
-#     print(document.metadata)
+    # page id
+    chunks_with_ids = calculate_chunk_ids(chunks)
 
-#     return chunks
+    # adicionando ou atualiza os documentos
+    existing_items = db.get(include=[])
+    existing_ids = set(existing_items["ids"])
+    print(f"Number of existing documents in DB: {len(existing_ids)}")
 
-# # salva os chunks em um db
-# def save_to_chroma(chunks: list[Document]):
-#     # limpa o db (se existir) antes
-#     if os.path.exists(CHROMA_PATH):
-#         shutil.rmtree(CHROMA_PATH)
+    # adiciona apenas os documentos que nao estao no db
+    new_chunks = []
+    for chunk in chunks_with_ids:
+        if chunk.metadata["id"] not in existing_ids:
+            new_chunks.append(chunk)
 
-#     # Vector Embenddings: é uma representação numérica de um texto
-#     # cria o db
-#     db = Chroma.from_documents(
-#         chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH
-#     )
-#     db.persist()
-#     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}")
+    if len(new_chunks):
+        print(f"Adding new documents: {len(new_chunks)}")
+        new_chunks_ids = [chunk.metadata["id"] for chunk in new_chunks]
+        db.add_documents(new_chunks, ids=new_chunks_ids)
+        db.persist()
+    else:
+        print("No new documents to add")
+    
 
-# if __name__ == "__main__":
-#     main()
+def calculate_chunk_ids(chunks):
+    # cria os IDs tipo 'data/monopoly.pdf:6:2
+    # page source : page number : chunk index
 
+    last_page_id = None
+    current_chunk_index = 0
 
+    for chunk in chunks:
+        source = chunk.metadata.get("source")
+        page = chunk.metadata.get("page")
+        current_page_id = f"{source}:{page}"
 
+        # caso o id da pagina seja igual ao interior, incrementa o index
+        if current_page_id == last_page_id:
+            current_chunk_index += 1
+        else:
+            current_chunk_index = 0
 
+        # calcula o chunk id
+        chunk_id = f"{current_page_id}:{current_chunk_index}"
+        last_page_id = current_page_id
 
-import dotenv
-from langchain_community.document_loaders import CSVLoader
-from langchain_community.vectorstores import Chroma
-from langchain_openai import OpenAIEmbeddings
+        # adiciona o chunk id ao metadata
+        chunk.metadata["id"] = chunk_id
+    
+    return chunks
 
-import nltk
-nltk.download('punkt_tab')
-nltk.download('averaged_perceptron_tagger_eng')
+def clear_database():
+    if os.path.exists(CHROMA_PATH):
+        shutil.rmtree(CHROMA_PATH)
 
-REVIEWS_CSV_PATH = "data"
-REVIEWS_CHROMA_PATH = "chroma_data"
-
-dotenv.load_dotenv()
-
-loader = DirectoryLoader(REVIEWS_CSV_PATH, glob="*.md")
-reviews = loader.load()
-
-reviews_vector_db = Chroma.from_documents(
-    reviews, OpenAIEmbeddings(), persist_directory=REVIEWS_CHROMA_PATH
-)
+if __name__ == "__main__":
+    main()
