@@ -10,6 +10,7 @@ def main():
     print("Para sair, diga 'bingo, sair'.")
     print('Fale alguma coisa:')
     while True:
+        # TODO: pegar microfone 100% e observar audio
         frase = speech.getAudio()
         if frase:
             print(f'Você: {frase}')
@@ -20,6 +21,8 @@ def main():
                 text.save(resposta)
                 print('Chatbot: ', resposta)
                 print('Fale alguma coisa:')
+
+# continuar conversa se tiver a ver com o que foi dito
 
 if __name__ == '__main__':
     main()

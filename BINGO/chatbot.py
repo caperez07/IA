@@ -24,7 +24,7 @@ class ChatBot():
 
         # cria uma conversa com o gpt
         resposta = self.client.chat.completions.create(
-            model = "gpt-3.5-turbo",
+            model = "gpt-4o-mini",
             messages = lMensagens
         )
 

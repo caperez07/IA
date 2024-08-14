@@ -3,14 +3,14 @@ from gtts import gTTS
 import os
 
 class TextToSpeech:
-    def __init__(self, text, language='pt-br'):
-        self.text = text
+    def __init__(self, language='pt-br'):
+        
         self.language = language
 
-    def save(self):
-        myobj = gTTS(text=self.text, lang=self.language, slow=False)
-        myobj.save("welcome.mp3")
-        os.system("start welcome.mp3")
+    def save(self, text):
+        myobj = gTTS(text=text, lang=self.language, slow=False)
+        myobj.save("answer.mp3")
+        os.system("start answer.mp3")
 
 # mytext = 'O Gabriel Medina é muito bom!'
 
