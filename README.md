@@ -1,6 +1,6 @@
-Criar ambiente virtual:
+# Criar ambiente virtual:
   - python -m venv venv
-Ativar:
+# Ativar:
   - venv\Scripts\activate
-Baixar requirements.txt:
+# Baixar requirements.txt:
   - pip install -r requirements.txt
