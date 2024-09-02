@@ -6,8 +6,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from embedding_function import get_embedding_function
 from langchain_chroma import Chroma
+# from langchain_community.vectorstores.chroma import Chroma
 
-DATA_PATH = 'data'
+DATA_PATH = 'C:/Desktop/IA/BINGO/rag/data'
 CHROMA_PATH = 'chroma'
 
 def main():
@@ -25,8 +26,11 @@ def main():
     add_to_chroma(chunks)
 
 def load_documents():
+    print(f"Loading documents from {DATA_PATH}")
     document_loader = PyPDFDirectoryLoader(DATA_PATH) # langchain documentation para diferentes tipos de arquivos
-    return document_loader.load()
+    documents = document_loader.load()
+    print(f"Loaded {len(documents)} documents.")
+    return documents
 
 def split_documents(documents):
     text_splitter = RecursiveCharacterTextSplitter(
@@ -59,9 +63,13 @@ def add_to_chroma(chunks: list[Document]):
 
     if len(new_chunks):
         print(f"Adding new documents: {len(new_chunks)}")
-        new_chunks_ids = [chunk.metadata["id"] for chunk in new_chunks]
+        # new_chunks_ids = [chunk.metadata["id"] for chunk in new_chunks]
+        for chunk in new_chunks:
+            new_chunks_ids = chunk.metadata["id"]
+            print('CHUNK: ' + chunk.metadata["id"])
         db.add_documents(new_chunks, ids=new_chunks_ids)
-        db.persist()
+        print("Added new documents")
+        # db.persist() -> depreciado na nova versao do Chroma
     else:
         print("No new documents to add")
     

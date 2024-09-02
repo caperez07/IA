@@ -3,6 +3,15 @@ from embedding_function import get_embedding_function
 from langchain_chroma import Chroma
 from langchain.prompts import ChatPromptTemplate
 from langchain_community.llms.ollama import Ollama
+from langchain_openai import ChatOpenAI
+from langchain.prompts import (
+    PromptTemplate,
+    SystemMessagePromptTemplate,
+    HumanMessagePromptTemplate,
+    ChatPromptTemplate,
+)
+from langchain_core.output_parsers import StrOutputParser
+from langchain.schema.runnable import RunnablePassthrough
 
 CHROMA_PATH = "chroma"
 
@@ -29,6 +38,7 @@ def main():
     args = parser.parse_args()
     query_text = args.query_text
     query_rag(query_text)
+    # rag()
 
 def query_rag(query_txt: str):
     # preparando o db
@@ -51,6 +61,46 @@ def query_rag(query_txt: str):
     formatted_response = f"Response: {response_text}\nSources: {sources}"
     print(formatted_response)
     return response_text
+
+# def rag():
+#     system_prompt = SystemMessagePromptTemplate(
+#         prompt=PromptTemplate(
+#             input_variables=["context"],
+#             template=PROMPT_TEMPLATE,
+#         )
+#     )
+
+#     human_prompt = HumanMessagePromptTemplate(
+#         prompt=PromptTemplate(
+#             input_variables=["question"],
+#             template="{question}",
+#         )
+#     )
+#     messages = [system_prompt, human_prompt]
+
+#     prompt_template = ChatPromptTemplate(
+#         input_variables=["context", "question"],
+#         messages=messages,
+#     )
+
+#     chat_model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+#     output_parser = StrOutputParser() # fromata a responsta
+
+#     # preparando o db
+#     embedding_function = get_embedding_function()
+#     db = Chroma(
+#         persist_directory=CHROMA_PATH, embedding_function=embedding_function
+#     )
+
+#     results = db.as_retriever(k=10)
+
+#     review_chain = (
+#         {"context": results, "question": RunnablePassthrough()}
+#         | prompt_template
+#         | chat_model
+#         | output_parser
+#     )
 
 if __name__ == "__main__":
     main()
