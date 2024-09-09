@@ -5,11 +5,12 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.schema.document import Document
 from embedding_function import get_embedding_function
-from langchain_chroma import Chroma
-# from langchain_community.vectorstores.chroma import Chroma
+# from langchain_chroma import Chroma
+from langchain_community.vectorstores.chroma import Chroma
 
-DATA_PATH = 'C:/Desktop/IA/BINGO/rag/data'
+DATA_PATH = 'data'
 CHROMA_PATH = 'chroma'
+MAX_BATCH_SIZE = 5461
 
 def main():
     # checa se o db precisa ser limpo
@@ -56,18 +57,29 @@ def add_to_chroma(chunks: list[Document]):
     print(f"Number of existing documents in DB: {len(existing_ids)}")
 
     # adiciona apenas os documentos que nao estao no db
-    new_chunks = []
-    for chunk in chunks_with_ids:
-        if chunk.metadata["id"] not in existing_ids:
-            new_chunks.append(chunk)
+    new_chunks = [chunk for chunk in chunks_with_ids if chunk.metadata["id"] not in existing_ids]
+    # new_chunks = []
+    # for chunk in chunks_with_ids:
+    #     if chunk.metadata["id"] not in existing_ids:
+    #         new_chunks.append(chunk)
+    
+    # if len(new_chunks) != len(chunks_with_ids):
+    #     print(f"Error: Length mismatch between chunks and IDs.")
+    #     return
 
     if len(new_chunks):
         print(f"Adding new documents: {len(new_chunks)}")
-        # new_chunks_ids = [chunk.metadata["id"] for chunk in new_chunks]
-        for chunk in new_chunks:
-            new_chunks_ids = chunk.metadata["id"]
-            print('CHUNK: ' + chunk.metadata["id"])
-        db.add_documents(new_chunks, ids=new_chunks_ids)
+        new_chunks_ids = [chunk.metadata["id"] for chunk in new_chunks]
+
+        # db.add_documents(new_chunks, ids=new_chunks_ids)
+
+        for i in range(0, len(new_chunks), MAX_BATCH_SIZE):
+            batch_chunks = new_chunks[i:i + MAX_BATCH_SIZE]
+            batch_ids = new_chunks_ids[i:i + MAX_BATCH_SIZE]
+            db.add_documents(batch_chunks, ids=batch_ids)
+            print(f"Added batch {i // MAX_BATCH_SIZE + 1} with {len(batch_chunks)} documents")
+
+        db.persist()
         print("Added new documents")
         # db.persist() -> depreciado na nova versao do Chroma
     else:

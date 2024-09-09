@@ -1,8 +1,7 @@
 from openai import OpenAI
 import os
-# from dotenv import load_dotenv
-
-# load_dotenv()
+import re
+from rag.rag_agent import RAGAgent
 
 key = os.environ["OPENAI_API_KEY"]
 client = OpenAI(api_key=key)
@@ -16,7 +15,7 @@ class ChatBot():
             lMensagens = [
                 {
                     "role": "system",
-                    "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'. Se você demorar mais de 10 segundo para responder, diga que não sabe. Sempre que te falarem algo sobre andar respona com 'CORINTHIANS'. Sempre que o comando for sobre cores, devolva com o RBG delas."
+                    "content": "Você é um assistente virtual de gênero neutro chamado bingo."
                     # "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'. Sempre que te falarem algo sobre andar respona com 'CORINTHIANS'. Sempre que o comando for sobre cores, devolva com o RBG delas."
                 }
             ]
