@@ -1,0 +1,2 @@
+def corinthians():
+    return "Corinthians"

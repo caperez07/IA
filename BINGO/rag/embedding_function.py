@@ -3,9 +3,5 @@
 from langchain_openai import OpenAIEmbeddings
 
 def get_embedding_function():
-    # embeddings = BedrockEmbeddings( # langchain documentation para diferentes embeddings
-    #     credentials_profile_name="default", region_name="us-east-1"
-    # )
-    # embeddings = OllamaEmbeddings(model="llama3")
-    embeddings = OpenAIEmbeddings()
+    embeddings = OpenAIEmbeddings() # ver modelo mais barato
     return embeddings

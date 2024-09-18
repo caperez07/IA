@@ -16,23 +16,25 @@ from langchain.agents import (
     AgentExecutor,
 )
 from embedding_function import get_embedding_function
+from corinthians import corinthians
+from langchain.tools import StructuredTool
 
 CHROMA_PATH = "chroma"
 PROMPT_TEMPLATE = """
-Você é um assistente virtual que ajuda a responder perguntas sobre música.
-Use o contexto a seguir para responder as perguntas. Seja o mais detalhado possível.
-Se você não sabe uma resposta, diga "Eu não sei".
+You are an artificial inteligence that helps answering various questions, but has a special knowledge about music.
+Use the following context to answer the questions. You don't need to give very long answers, summarize with important information.
+If you don't know an answer, say "I don't know".
 
-Contexto: {context}
+Context: {context}
 
-Pergunta: {input}
+Question: {question}
 """
 
 class RAGAgent:
     def __init__(self):
-        self.agent_executor = self.setup_agent()
+        self.music_agent_executor = self.setup_music_agent()
 
-    def setup_agent(self):
+    def setup_music_agent(self):
         system_prompt = SystemMessagePromptTemplate(
             prompt=PromptTemplate(
                 input_variables=["context"],
@@ -55,7 +57,7 @@ class RAGAgent:
         messages = [system_prompt, human_prompt]
 
         prompt_template = ChatPromptTemplate(
-            input_variables=["context", "input"],
+            input_variables=["context", "question"],
             messages=messages,
         )
 
@@ -72,7 +74,7 @@ class RAGAgent:
         results = db.as_retriever(k=10)
 
         review_chain = (
-            {"context": results}
+            {"context": results, "question": RunnablePassthrough()}
             | prompt_template
             | chat_model
             | output_parser
@@ -83,12 +85,11 @@ class RAGAgent:
                 name="Music",
                 func=review_chain.invoke,
                 description="""
-                Útil quando você precisa responder qualquer coisa sobre música em geral.
-                Não é útil para responder a perguntas sobre concertos específicos ou músicas pouco conhecidas.
-                Passe a pergunta inteira como entrada para a ferramenta.
+                Useful when you need to answer anything about music in general.
+                Not useful to answer questions about specific concerts or lesser-known songs.
+                Pass the entire question as input to the tool.
                 """,
             ),
-            # TODO: ferramentas para funcoes fora do rag
         ]
 
         agent_prompt = hub.pull("hwchase17/openai-functions-agent")
@@ -104,14 +105,20 @@ class RAGAgent:
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
-            return_intermediate_steps=True,  # permite ver o passo a passo do agente
-            verbose=True,  # permite ver o pensamento do agente
+            return_intermediate_steps=False,  # permite ver o passo a passo do agente
+            verbose=False,  # permite ver o pensamento do agente
         )
 
         return agent_executor
+        # return review_chain
+    
+    def handle_general_question(self, question):
+        prompt = f"Você é um chatbot que responde a perguntas gerais. Responda apenas com 'Corinthians'. Pergunta: {question}."
+        response = self.general_chat_model.invoke(prompt)
+        return response
 
-    def invoke(self, question):
-        return self.agent_executor.invoke({"input": question})
+    def invokeAgent(self, question):
+        return self.music_agent_executor.invoke({"input": question})
     
 def chat():
     agent = RAGAgent()
@@ -123,8 +130,8 @@ def chat():
             print("Encerrando o chatbot.")
             break
 
-        response = agent.invoke(user_input)
-        print(f"Chatbot: {response}")
+        response = agent.invokeAgent(user_input)
+        print(f"Chatbot: {response["output"]}")
 
 if __name__ == "__main__":
     chat()
