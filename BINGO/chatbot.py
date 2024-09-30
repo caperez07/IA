@@ -1,7 +1,7 @@
 from openai import OpenAI
 import os
 import re
-from rag.rag_agent import RAGAgent
+# from rag.rag_agent import RAGAgent
 
 key = os.environ["OPENAI_API_KEY"]
 client = OpenAI(api_key=key)
