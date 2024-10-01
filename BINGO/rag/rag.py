@@ -15,7 +15,9 @@ from langchain.agents import (
     AgentExecutor,
 )
 from rag.embedding_function import get_embedding_function
-from langchain.chains.conversation.memory import ConversationBufferWindowMemory
+from rag.mqtt_call import on_call
+from langchain.memory import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 
 CHROMA_PATH = "chroma"
@@ -78,6 +80,16 @@ class Rag():
 
         def corinthians(input_data):
             return "Corinthians é o maior time do Brasil."
+        
+        def change_color(rgb_color):
+            color = rgb_color.split(" #")
+            json = {
+                "action": "cor",
+                "color": color[0]
+            }    
+            
+            on_call(json)
+            return json
 
         tools = [
             Tool(
@@ -88,6 +100,15 @@ class Rag():
                 Not useful to answer questions about specific concerts or lesser-known songs.
                 Pass the entire question as input to the tool.
                 """,
+            ),
+            Tool(
+                name="ChangeColor",
+                func=change_color,
+                description="""
+                Utilize sempre que for pedido alguma mudança de cor da luz.
+                Nesta função passe como parâmetro o apenas o código RGB da cor desejada.
+                Responda apenas com o código da cor.
+                """
             ),
             Tool(
                 name="Sum",
@@ -114,11 +135,7 @@ class Rag():
 
         agent_chat_model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-        memory = ConversationBufferWindowMemory(
-            memory_key="chat_history",
-            k=3,
-            return_messages=True
-        )
+        memory = ChatMessageHistory(session_id="bingo-chat")
 
         # agent = create_tool_calling_agent(
         #     llm=agent_chat_model,
@@ -136,9 +153,17 @@ class Rag():
             tools=tools,
             return_intermediate_steps=True,  # permite ver o passo a passo do agente
             verbose=True,  # permite ver o pensamento do agente
+            handle_parsing_errors=True,  # permite ver os erros de parsing
         )
 
-        return agent_executor.invoke({"input": question})
+        agent_with_chat_history = RunnableWithMessageHistory(
+            agent_executor,
+            lambda session_id: memory,
+            input_messages_key="input",
+            history_messages_key="chat_history",
+        )
+
+        return agent_with_chat_history.invoke({"input": question}, config={"configurable": {"session_id": "<foo>"}})
 
 # resultado = agent("Quem é travis scott?")
 

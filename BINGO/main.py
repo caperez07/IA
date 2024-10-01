@@ -1,4 +1,4 @@
-from chatbot import ChatBot
+# from chatbot import ChatBot
 from speech_to_text import SpeechToText
 from text_to_speech import TextToSpeech
 from rag.rag import Rag
@@ -31,13 +31,14 @@ def main():
     while True:
         frase = input("Você: ")
         if frase:
-            print(f'Você: {frase}')
+            # print(f'Você: {frase}')
             if 'bingo sair' in frase.lower():
                 break
 
             resposta = rag_agent.setup_agent(frase)
-            print('Bingo: ', resposta['output'])
-            print('Fale alguma coisa:')
+            # print('Bingo: ', resposta['output'])
+            print('Bingo: ', resposta)
+            # print('Fale alguma coisa:')
                 
     
 
