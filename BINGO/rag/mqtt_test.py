@@ -1,35 +1,75 @@
-import json
-import paho.mqtt.client as mqtt
+# import nest_asyncio
+# import asyncio
+# from gmqtt import Client as MQTTClient
 
-def enviar_json_mqtt(broker, porta, topico, dados_json):
-    # Cria um cliente MQTT
-    client = mqtt.Client(client_id="clientId-42wY1MttnQ", protocol=mqtt.MQTTv311)
-    
-    # Conecta ao broker MQTT
-    client.connect(broker, porta, 60)
-    
-    # Converte o dicionário Python para JSON
-    dados_json_str = json.dumps(dados_json)
-    
-    # Publica o JSON no tópico especificado
-    client.publish(topico, dados_json_str)
-    
+# # Permite o uso de asyncio no Colab
+# nest_asyncio.apply()
+
+# # Função de callback para quando o cliente se conectar ao broker
+# def on_connect(client, flags, rc, properties):
+#     print('Conectado com sucesso!')
+#     # Publica uma mensagem no tópico "bingo" assim que conectado
+#     client.publish('bingo/teste', "teste do bingo")
+
+# # Função de callback para quando a mensagem for publicada
+# def on_publish(client, mid):
+#     print(f'Mensagem publicada com sucesso com mid: {mid}')
+
+# async def send_mqtt(message):
+#     # Cria o cliente MQTT com um ID único
+#     client = MQTTClient("client_id_bingo")
+
+#     # Define as funções de callback
+#     client.on_connect = on_connect
+#     client.on_publish = on_publish
+
+#     # Conecta ao broker público HiveMQ
+#     await client.connect('mqtt-dashboard.com')
+
+#     # Aguarda para garantir que a mensagem seja publicada
+#     # await asyncio.sleep(0.5)
+
+#     # Desconecta do broker
+#     await client.disconnect()
+
+# # Executa o loop asyncio no Colab
+# # asyncio.run(send_mqtt())
+
+
+import nest_asyncio
+import asyncio
+from gmqtt import Client as MQTTClient
+
+# Permite o uso de asyncio no Colab
+nest_asyncio.apply()
+
+# Função de callback para quando o cliente se conectar ao broker
+def on_connect(client, flags, rc, properties):
+    print('Conectado com sucesso!')
+
+# Função de callback para quando a mensagem for publicada
+def on_publish(client, mid):
+    print(f'Mensagem publicada com sucesso com mid: {mid}')
+
+async def send_mqtt(message):
+    # Cria o cliente MQTT com um ID único
+    client = MQTTClient("client_id_bingo")
+
+    # Define as funções de callback
+    client.on_connect = on_connect
+    client.on_publish = on_publish
+
+    # Conecta ao broker público HiveMQ
+    await client.connect('mqtt-dashboard.com')
+
+    # Publica a mensagem no tópico 'bingo/teste' com o conteúdo de `message`
+    client.publish('bingo/teste', message)
+
+    # Aguarda um curto intervalo para garantir que a mensagem seja publicada
+    await asyncio.sleep(0.5)
+
     # Desconecta do broker
-    client.disconnect()
+    await client.disconnect()
 
-# Exemplo de uso da função
-if __name__ == "__main__":
-    # Define os dados que você deseja enviar
-    dados = {
-        "temperatura": 23.5,
-        "umidade": 60
-    }
-    
-    # Parâmetros do broker e tópico
-    broker = "mqtt-dashboard.com"  # Broker público para testes
-    porta = 8884                   # Porta padrão do MQTT
-    topico = "bingo"
-
-    # Envia os dados JSON via MQTT
-    enviar_json_mqtt(broker, porta, topico, dados)
-    print("Dados enviados com sucesso!")
+# Exemplo de execução, passando uma mensagem para enviar
+# asyncio.run(send_mqtt("Sua mensagem personalizada"))

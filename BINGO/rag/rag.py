@@ -16,7 +16,7 @@ from langchain.agents import (
 )
 from rag.embedding_function import get_embedding_function
 from rag.mqtt_call import on_call
-from langchain.memory import ChatMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 
 
@@ -81,10 +81,20 @@ class Rag():
         def corinthians(input_data):
             return "Corinthians é o maior time do Brasil."
         
-        def change_color(rgb_color):
+        def color_bingo(rgb_color):
             color = rgb_color.split(" #")
             json = {
-                "action": "cor",
+                "action": "corBingo",
+                "color": color[0]
+            }    
+            
+            on_call(json)
+            return json
+        
+        def color_estande(rgb_color):
+            color = rgb_color.split(" #")
+            json = {
+                "action": "corEstande",
                 "color": color[0]
             }    
             
@@ -102,10 +112,24 @@ class Rag():
                 """,
             ),
             Tool(
-                name="ChangeColor",
-                func=change_color,
+                name="ChangeColorBingo",
+                func=color_bingo,
                 description="""
-                Utilize sempre que for pedido alguma mudança de cor da luz.
+                Utilize sempre que for pedido alguma mudança da sua cor.
+                Nesta função passe como parâmetro o apenas o código da sua cor RBG.
+                Responda apenas com o código da cor.
+                """
+                # description="""
+                # Utilize sempre que a seguinte frase for dita: "Bingo, troque sua cor para".
+                # Nesta função passe como parâmetro o apenas o código RGB da cor desejada.
+                # Responda apenas com o código da cor.
+                # """
+            ),
+            Tool(
+                name="ChangeColorEstande",
+                func=color_estande,
+                description="""
+                Utilize sempre for pedido para mudar a cor do lugar estande.
                 Nesta função passe como parâmetro o apenas o código RGB da cor desejada.
                 Responda apenas com o código da cor.
                 """

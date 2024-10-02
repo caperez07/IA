@@ -36,8 +36,8 @@ def main():
                 break
 
             resposta = rag_agent.setup_agent(frase)
-            # print('Bingo: ', resposta['output'])
-            print('Bingo: ', resposta)
+            print('Bingo: ', resposta['output'])
+            # print('Bingo: ', resposta)
             # print('Fale alguma coisa:')
                 
     
