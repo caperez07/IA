@@ -16,8 +16,10 @@ from langchain.agents import (
 )
 from rag.embedding_function import get_embedding_function
 from rag.mqtt_call import on_call
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
+from chatbot import ChatBot
+from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.prompts import MessagesPlaceholder
+from langchain_core.runnables import RunnableMap, RunnableLambda, RunnableParallel
 
 
 CHROMA_PATH = "chroma"
@@ -33,9 +35,12 @@ Context: {context}
 Question: {input}
 """
 
+chatbot = ChatBot()
+
 class Rag():
     def setup_agent(self, question):
         # prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
+
         system_prompt = SystemMessagePromptTemplate(
             prompt=PromptTemplate(
                 input_variables=["context"],
@@ -51,10 +56,25 @@ class Rag():
         )
         messages = [system_prompt, human_prompt]
 
-        prompt_template = ChatPromptTemplate(
-            input_variables=["context", "input"],
-            messages=messages,
-        )
+        # prompt_template = ChatPromptTemplate(
+        #     input_variables=["context", "input"],
+        #     messages=messages,
+        # )
+        prompt_template = ChatPromptTemplate.from_messages([
+            (
+                "system", """
+                    You are an artificial assistant called Bingo that helps answering various questions, but has a special knowledge about music.
+                    Use the following context to answer the questions. You don't need to give very long answers, summarize with important information.
+                    Every time you receive a question it will have the name 'Bingo', just ignore that name and answer normally.
+                    If you don't know an answer, because don't have the speccific information in the context, say "I don't know because of the context.".
+                    Always answer in portuguese.
+
+                    Context: {context}
+                """
+            ),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("human", "{input}"),
+        ])
 
         model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
@@ -65,23 +85,40 @@ class Rag():
 
         results = db.as_retriever(k=10)
 
+        chat_history = [
+            HumanMessage(content="Ola"),
+            AIMessage(content="Ola!"),
+            HumanMessage(content="Meu nome é Lucas"),
+        ]
+
+        # retrieval_chain = (
+        #     {"context": results, "input": RunnablePassthrough()}
+        #     | prompt_template
+        #     | model
+        #     | StrOutputParser()
+        # )
         retrieval_chain = (
-            {"context": results, "input": RunnablePassthrough()}
+            RunnableParallel({
+                "chat_history": RunnableLambda(lambda x: chat_history),
+                "context": results,
+                "input": RunnablePassthrough(),
+                
+            })
             | prompt_template
             | model
             | StrOutputParser()
         )
 
-        def sum(input_data):
-            a, b = input_data.split('+')
-            a = int(a)
-            b = int(b)
-            return a + b
+        # def sum(input_data):
+        #     a, b = input_data.split('+')
+        #     a = int(a)
+        #     b = int(b)
+        #     return a + b
 
         def corinthians(input_data):
             return "Corinthians é o maior time do Brasil."
         
-        def color_bingo(rgb_color):
+        def your_color(rgb_color):
             color = rgb_color.split(" #")
             json = {
                 "action": "corBingo",
@@ -100,6 +137,10 @@ class Rag():
             
             on_call(json)
             return json
+        
+        def normal_answer(input_data):
+            response = chatbot.enviar_mensagem(input_data)
+            return response
 
         tools = [
             Tool(
@@ -112,18 +153,20 @@ class Rag():
                 """,
             ),
             Tool(
-                name="ChangeColorBingo",
-                func=color_bingo,
+                name="NormalAnswer",
+                func=normal_answer,
+                description="""
+                Useful when you need to answer anything that is not related to music.
+                """,
+            ),
+            Tool(
+                name="ChangeYourColor",
+                func=your_color,
                 description="""
                 Utilize sempre que for pedido alguma mudança da sua cor.
                 Nesta função passe como parâmetro o apenas o código da sua cor RBG.
                 Responda apenas com o código da cor.
                 """
-                # description="""
-                # Utilize sempre que a seguinte frase for dita: "Bingo, troque sua cor para".
-                # Nesta função passe como parâmetro o apenas o código RGB da cor desejada.
-                # Responda apenas com o código da cor.
-                # """
             ),
             Tool(
                 name="ChangeColorEstande",
@@ -134,13 +177,13 @@ class Rag():
                 Responda apenas com o código da cor.
                 """
             ),
-            Tool(
-                name="Sum",
-                func=sum,
-                description="""
-                Useful when you need to sum two numbers.
-                """,
-            ),
+            # Tool(
+            #     name="Sum",
+            #     func=sum,
+            #     description="""
+            #     Useful when you need to sum two numbers.
+            #     """,
+            # ),
             Tool(
                 name="Corinthians",
                 func=corinthians,
@@ -159,7 +202,7 @@ class Rag():
 
         agent_chat_model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-        memory = ChatMessageHistory(session_id="bingo-chat")
+        # memory = ChatMessageHistory(session_id="bingo-chat")
 
         # agent = create_tool_calling_agent(
         #     llm=agent_chat_model,
@@ -175,19 +218,12 @@ class Rag():
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
-            return_intermediate_steps=True,  # permite ver o passo a passo do agente
-            verbose=True,  # permite ver o pensamento do agente
-            handle_parsing_errors=True,  # permite ver os erros de parsing
+            return_intermediate_steps=False,  # permite ver o passo a passo do agente
+            verbose=False,  # permite ver o pensamento do agente
+            handle_parsing_errors=False,  # permite ver os erros de parsing
         )
 
-        agent_with_chat_history = RunnableWithMessageHistory(
-            agent_executor,
-            lambda session_id: memory,
-            input_messages_key="input",
-            history_messages_key="chat_history",
-        )
-
-        return agent_with_chat_history.invoke({"input": question}, config={"configurable": {"session_id": "<foo>"}})
+        return agent_executor.invoke({"input": question})
 
 # resultado = agent("Quem é travis scott?")
 
