@@ -59,6 +59,7 @@ tokenization, see the other methods provided in this package.
 For further information, please see Chapter 3 of the NLTK book.
 """
 
+import functools
 import re
 
 from nltk.data import load
@@ -92,6 +93,18 @@ from nltk.tokenize.treebank import TreebankWordDetokenizer, TreebankWordTokenize
 from nltk.tokenize.util import regexp_span_tokenize, string_span_tokenize
 
 
+@functools.lru_cache
+def _get_punkt_tokenizer(language="english"):
+    """
+    A constructor for the PunktTokenizer that utilizes
+    a lru cache for performance.
+
+    :param language: the model name in the Punkt corpus
+    :type language: str
+    """
+    return PunktTokenizer(language)
+
+
 # Standard sentence tokenizer.
 def sent_tokenize(text, language="english"):
     """
@@ -103,7 +116,7 @@ def sent_tokenize(text, language="english"):
     :param text: text to split into sentences
     :param language: the model name in the Punkt corpus
     """
-    tokenizer = PunktTokenizer(language)
+    tokenizer = _get_punkt_tokenizer(language)
     return tokenizer.tokenize(text)
 
 

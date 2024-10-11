@@ -14,6 +14,7 @@ from langchain.agents import (
     Tool,
     AgentExecutor,
 )
+from rag.base_memory import SimpleMemory
 from rag.embedding_function import get_embedding_function
 from rag.mqtt_call import on_call
 from chatbot import ChatBot
@@ -85,11 +86,25 @@ class Rag():
 
         results = db.as_retriever(k=10)
 
+        all_vectors = results.get_relevant_documents(question, k=10)
+
+        # Exibir os dados
+        print("Conteúdo do Vector Store:")
+        for vector in all_vectors:
+            print(vector)
+
         chat_history = [
             HumanMessage(content="Ola"),
             AIMessage(content="Ola!"),
             HumanMessage(content="Meu nome é Lucas"),
         ]
+
+
+        # chat_history = {
+        #     "human": HumanMessage(content="Ola"),
+        #     "bingo": AIMessage(content="Ola!"),
+        #     "human": HumanMessage(content="Meu nome é Lucas"),
+        # }
 
         # retrieval_chain = (
         #     {"context": results, "input": RunnablePassthrough()}
@@ -97,6 +112,16 @@ class Rag():
         #     | model
         #     | StrOutputParser()
         # )
+
+        memory = SimpleMemory()
+
+        # Agente pergunta o nome
+        inputs = {"question": "Qual é o seu nome?"}
+        outputs = {"name": "Romanelson"}  # Usuário responde 'Carlos'
+
+        # Salva o nome na memória
+        memory.save_context(inputs, outputs)
+
         retrieval_chain = (
             RunnableParallel({
                 "chat_history": RunnableLambda(lambda x: chat_history),
@@ -218,9 +243,10 @@ class Rag():
         agent_executor = AgentExecutor(
             agent=agent,
             tools=tools,
-            return_intermediate_steps=False,  # permite ver o passo a passo do agente
-            verbose=False,  # permite ver o pensamento do agente
+            return_intermediate_steps=True,  # permite ver o passo a passo do agente
+            verbose=True,  # permite ver o pensamento do agente
             handle_parsing_errors=False,  # permite ver os erros de parsing
+            memory=memory,
         )
 
         return agent_executor.invoke({"input": question})

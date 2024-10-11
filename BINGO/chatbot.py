@@ -9,10 +9,17 @@ client = OpenAI(api_key=key)
 class ChatBot():
     def __init__(self):
         self.client = client
+        self.lMensagens = [
+                {
+                    "role": "system",
+                    "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
+                    # "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'. Sempre que te falarem algo sobre andar respona com 'CORINTHIANS'. Sempre que o comando for sobre cores, devolva com o RBG delas."
+                }
+            ]
     
-    def enviar_mensagem(self, mensagem, lMensagens=None):
-        if lMensagens is None:
-            lMensagens = [
+    def enviar_mensagem(self, mensagem):
+        if self.lMensagens is None:
+            self.lMensagens = [
                 {
                     "role": "system",
                     "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
@@ -20,12 +27,12 @@ class ChatBot():
                 }
             ]
         
-        lMensagens.append({"role": "user", "content": mensagem})  # armazena a mensagem do usuário
+        self.lMensagens.append({"role": "user", "content": mensagem})  # armazena a mensagem do usuário
 
         # cria uma conversa com o gpt
         resposta = self.client.chat.completions.create(
             model = "gpt-4o-mini",
-            messages = lMensagens
+            messages = self.lMensagens
         )
 
         return resposta.choices[0].message.content

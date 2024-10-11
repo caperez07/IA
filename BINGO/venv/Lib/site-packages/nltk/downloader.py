@@ -1270,7 +1270,7 @@ class DownloaderShell:
                     print("  Cancelled!")
                 else:
                     if not new_url.startswith(("http://", "https://")):
-                        new_url = "http://" + new_url
+                        new_url = "https://" + new_url
                     try:
                         self._ds.url = new_url
                     except Exception as e:
