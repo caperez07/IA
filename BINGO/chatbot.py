@@ -12,7 +12,7 @@ class ChatBot():
         self.lMensagens = [
                 {
                     "role": "system",
-                    "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
+                    "content": "Você é um assistente virtual de gênero neutro chamado Bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
                     # "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'. Sempre que te falarem algo sobre andar respona com 'CORINTHIANS'. Sempre que o comando for sobre cores, devolva com o RBG delas."
                 }
             ]
@@ -22,7 +22,7 @@ class ChatBot():
             self.lMensagens = [
                 {
                     "role": "system",
-                    "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
+                    "content": "Você é um assistente virtual de gênero neutro chamado Bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'."
                     # "content": "Você é um assistente virtual de gênero neutro chamado bingo. Não precisa começar toda a sua resposta com 'Oi' ou 'Olá'. Sempre que te falarem algo sobre andar respona com 'CORINTHIANS'. Sempre que o comando for sobre cores, devolva com o RBG delas."
                 }
             ]

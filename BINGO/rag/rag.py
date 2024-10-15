@@ -89,7 +89,7 @@ class Rag():
         all_vectors = results.get_relevant_documents(question, k=10)
 
         # Exibir os dados
-        print("Conteúdo do Vector Store:")
+        # print("Conteúdo do Vector Store:")
         for vector in all_vectors:
             print(vector)
 
@@ -127,7 +127,6 @@ class Rag():
                 "chat_history": RunnableLambda(lambda x: chat_history),
                 "context": results,
                 "input": RunnablePassthrough(),
-                
             })
             | prompt_template
             | model
@@ -150,7 +149,7 @@ class Rag():
                 "color": color[0]
             }    
             
-            on_call(json)
+            on_call('bincolor', json)
             return json
         
         def color_estande(rgb_color):
@@ -160,8 +159,12 @@ class Rag():
                 "color": color[0]
             }    
             
-            on_call(json)
+            on_call('bincolor', json)
             return json
+        
+        def bracinho(input_data):
+            on_call('binbracinho', 'a')
+            return ''
         
         def normal_answer(input_data):
             response = chatbot.enviar_mensagem(input_data)
@@ -185,12 +188,20 @@ class Rag():
                 """,
             ),
             Tool(
+                name="Bracinho",
+                func=bracinho,
+                description="""
+                Utilize sempre que for uma reverência, como 'Oi' ou 'Tchau'.
+                Responda normalmente e chame a função.
+                """
+            ),
+            Tool(
                 name="ChangeYourColor",
                 func=your_color,
                 description="""
                 Utilize sempre que for pedido alguma mudança da sua cor.
-                Nesta função passe como parâmetro o apenas o código da sua cor RBG.
-                Responda apenas com o código da cor.
+                Nesta função passe como parâmetro o apenas o código da sua cor RBG no formato r, g, b.
+                Responda apenas avisando que você mudou a sua cor.
                 """
             ),
             Tool(
@@ -198,8 +209,8 @@ class Rag():
                 func=color_estande,
                 description="""
                 Utilize sempre for pedido para mudar a cor do lugar estande.
-                Nesta função passe como parâmetro o apenas o código RGB da cor desejada.
-                Responda apenas com o código da cor.
+                Nesta função passe como parâmetro o apenas o código da sua cor RBG no formato r, g, b.
+                Responda apenas avisando que você mudou a cor do estande.
                 """
             ),
             # Tool(
@@ -245,7 +256,7 @@ class Rag():
             tools=tools,
             return_intermediate_steps=True,  # permite ver o passo a passo do agente
             verbose=True,  # permite ver o pensamento do agente
-            handle_parsing_errors=False,  # permite ver os erros de parsing
+            handle_parsing_errors=True,  # permite ver os erros de parsing
             memory=memory,
         )
 

@@ -13,9 +13,9 @@ def on_connect(client, flags, rc, properties):
 def on_publish(client, mid):
     print(f'Mensagem publicada com sucesso com mid: {mid}')
 
-async def send_mqtt(message):
+async def send_mqtt(topic, message):
     # Cria o cliente MQTT com um ID único
-    client = MQTTClient("client_id_bingo")
+    client = MQTTClient("clientId-SdL11PLYMn")
 
     # Define as funções de callback
     client.on_connect = on_connect
@@ -25,7 +25,7 @@ async def send_mqtt(message):
     await client.connect('mqtt-dashboard.com')
 
     # Publica a mensagem no tópico 'bingo/teste' com o conteúdo de `message`
-    client.publish('bingo/teste', message)
+    client.publish(topic, message)
 
     # Aguarda um curto intervalo para garantir que a mensagem seja publicada
     await asyncio.sleep(0.5)
